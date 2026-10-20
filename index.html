@@ -1,0 +1,231 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="referrer" content="no-referrer">
+<title>Read It Aloud — Short Story Lab</title>
+<style>
+  :root{--ink:#22212a;--muted:#5a5560;--navy:#17333a;--cream:#fbf6ec;--card:#fffdf8;--line:#e3d9c6;--accent:#a8521c;--rec:#b3261e;--ok:#2f6b45}
+  *{box-sizing:border-box}
+  html,body{margin:0;background:var(--cream);color:var(--ink);font:500 16px/1.5 system-ui,-apple-system,"Segoe UI",sans-serif}
+  header{background:var(--navy);color:#fff;padding:14px 20px;display:flex;flex-wrap:wrap;gap:6px 16px;align-items:baseline}
+  header h1{margin:0;font:700 20px/1.2 Georgia,"Times New Roman",serif}
+  header p{margin:0;color:#d7e3e1;font-size:13.5px}
+  main{display:grid;grid-template-columns:minmax(0,1fr) 340px;gap:18px;padding:18px 20px;max-width:1200px;margin:0 auto}
+  @media (max-width:820px){main{grid-template-columns:minmax(0,1fr)}.side{order:-1}}
+  .card{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:16px}
+  h2{margin:0 0 8px;font:700 15px system-ui,sans-serif}
+  #story{white-space:pre-wrap;font:400 19px/1.75 Georgia,"Times New Roman",serif;max-height:calc(100vh - 160px);overflow:auto;padding:4px 6px}
+  #paste{width:100%;min-height:260px;padding:10px;border:1px solid #c9bea9;border-radius:6px;font:400 16px/1.6 Georgia,serif;background:#fff;color:var(--ink)}
+  .note{font-size:13px;color:var(--muted);margin:6px 0 0}
+  .side{display:flex;flex-direction:column;gap:14px}
+  .rec-row{display:flex;align-items:center;gap:12px;flex-wrap:wrap}
+  button{font:700 15px system-ui,sans-serif;border-radius:24px;border:1px solid #c9bea9;background:#fff;color:var(--ink);padding:9px 18px;cursor:pointer;min-height:44px}
+  button:focus-visible{outline:3px solid #f2b46b;outline-offset:2px}
+  button[disabled]{opacity:1;color:#6b6670;background:#f1ece2;cursor:not-allowed}
+  #recBtn{background:var(--rec);border-color:var(--rec);color:#fff;min-width:150px}
+  #recBtn.is-recording{background:#fff;color:var(--rec)}
+  #timer{font:700 22px/1 ui-monospace,Menlo,monospace;min-width:72px}
+  .meter{height:10px;border-radius:5px;background:#ece5d6;overflow:hidden;flex:1;min-width:80px}
+  .meter i{display:block;height:100%;width:0;background:var(--ok);transition:width .08s}
+  .dot{display:inline-block;width:10px;height:10px;border-radius:50%;background:var(--rec);margin-right:6px;animation:blink 1s steps(2,start) infinite}
+  @keyframes blink{to{visibility:hidden}}
+  #status{font-size:14px;color:var(--muted);min-height:20px;margin:8px 0 0}
+  #status.err{color:var(--rec);font-weight:600}
+  ol#takes{list-style:none;margin:0;padding:0;display:grid;gap:10px}
+  #takes li{border:1px solid var(--line);border-radius:8px;padding:10px;background:#fff}
+  #takes .head{display:flex;justify-content:space-between;align-items:center;gap:8px;font-weight:700;font-size:14px;margin-bottom:6px}
+  #takes audio{width:100%}
+  #takes button{min-height:32px;padding:4px 12px;font-size:13px}
+  .empty{color:var(--muted);font-size:14px}
+  ul.tips{margin:0;padding-left:18px;font-size:14px;color:var(--ink)}
+  ul.tips li{margin:4px 0}
+  .privacy{font-size:13px;color:var(--muted);border-left:3px solid var(--ok);padding-left:10px}
+</style>
+</head>
+<body>
+<header>
+  <h1>Read It Aloud</h1>
+  <p>Read your story out loud, then listen. Your ear catches what your eye skips.</p>
+</header>
+<main>
+  <section class="card" aria-labelledby="storyHead">
+    <h2 id="storyHead">Your story</h2>
+    <div id="story" hidden></div>
+    <div id="pasteWrap">
+      <textarea id="paste" placeholder="Your story will appear here when you open this from Short Story Lab. You can also paste it in."></textarea>
+      <p class="note" id="waitNote">Waiting for your story from Short Story Lab…</p>
+    </div>
+  </section>
+  <aside class="side">
+    <section class="card" aria-labelledby="recHead">
+      <h2 id="recHead">Record</h2>
+      <div class="rec-row">
+        <button type="button" id="recBtn">● Record</button>
+        <span id="timer" aria-live="off">0:00</span>
+      </div>
+      <div class="rec-row" style="margin-top:10px"><span class="note" style="margin:0">Mic</span><div class="meter" aria-hidden="true"><i id="level"></i></div></div>
+      <p id="status" role="status" aria-live="polite"></p>
+    </section>
+    <section class="card" aria-labelledby="takesHead">
+      <h2 id="takesHead">Your takes</h2>
+      <ol id="takes"></ol>
+      <p class="empty" id="noTakes">No recordings yet. Press Record and read your story.</p>
+    </section>
+    <section class="card" aria-labelledby="tipsHead">
+      <h2 id="tipsHead">Listen for</h2>
+      <ul class="tips">
+        <li>Places you stumbled or ran out of breath: a sentence may be too long or tangled.</li>
+        <li>Dialogue that doesn't sound like something a person would say.</li>
+        <li>Spots where your voice went flat: is something happening there?</li>
+        <li>Words you repeat close together.</li>
+        <li>Your ending: does it land the way you want?</li>
+      </ul>
+      <p class="note">Jot what you notice in your Revision checklist notes, then fix it in your revised draft.</p>
+    </section>
+    <p class="privacy">Practice only: nothing is saved or uploaded. Your recordings stay in this window and are gone when you close it.</p>
+  </aside>
+</main>
+<script>
+(function () {
+  "use strict";
+  // Only Short Story Lab pages (served by Apps Script) may send a story.
+  var TRUSTED = /^https:\/\/([a-z0-9-]+\.)*(googleusercontent\.com|script\.google\.com)$/i;
+  var MAX_TAKES = 5;
+  var $ = function (id) { return document.getElementById(id); };
+  var storyEl = $("story"), pasteWrap = $("pasteWrap"), waitNote = $("waitNote");
+  var recBtn = $("recBtn"), timerEl = $("timer"), levelEl = $("level"), statusEl = $("status");
+  var takesEl = $("takes"), noTakes = $("noTakes");
+  var stream = null, recorder = null, chunks = [], started = 0, tick = null, audioCtx = null, analyser = null, raf = null;
+  var takes = [], takeNo = 0;
+
+  function setStatus(msg, isErr) { statusEl.textContent = msg || ""; statusEl.className = isErr ? "err" : ""; }
+  function fmt(ms) { var s = Math.floor(ms / 1000); return Math.floor(s / 60) + ":" + String(s % 60).padStart(2, "0"); }
+
+  // ---- the story -----------------------------------------------------------
+  function showStory(title, text) {
+    text = String(text || "");
+    if (!text.trim()) return;
+    storyEl.textContent = text;
+    storyEl.hidden = false;
+    pasteWrap.hidden = true;
+    $("storyHead").textContent = title ? String(title) : "Your story";
+  }
+  window.addEventListener("message", function (e) {
+    if (!TRUSTED.test(String(e.origin || ""))) return;
+    var d = e.data;
+    if (!d || d.type !== "ss-story") return;
+    showStory(d.title, d.text);
+  });
+  if (window.opener) {
+    try { window.opener.postMessage({ type: "ss-recorder-ready" }, "*"); } catch (e) {}
+    setTimeout(function () { if (storyEl.hidden) waitNote.textContent = "Your story didn't arrive. Paste it in above, or close this window and press the button in Short Story Lab again."; }, 4000);
+  } else {
+    waitNote.textContent = "Paste your story above, or open this page from the Revision step in Short Story Lab.";
+  }
+  $("paste").addEventListener("input", function () { waitNote.hidden = true; });
+
+  // ---- recording -----------------------------------------------------------
+  function pickType() {
+    var types = ["audio/webm;codecs=opus", "audio/webm", "audio/mp4", "audio/ogg;codecs=opus"];
+    for (var i = 0; i < types.length; i++) { try { if (window.MediaRecorder && MediaRecorder.isTypeSupported(types[i])) return types[i]; } catch (e) {} }
+    return "";
+  }
+  function meter() {
+    if (!analyser) return;
+    var buf = new Uint8Array(analyser.fftSize);
+    analyser.getByteTimeDomainData(buf);
+    var peak = 0;
+    for (var i = 0; i < buf.length; i++) peak = Math.max(peak, Math.abs(buf[i] - 128));
+    levelEl.style.width = Math.min(100, Math.round(peak / 128 * 220)) + "%";
+    raf = requestAnimationFrame(meter);
+  }
+  function stopMeter() {
+    if (raf) cancelAnimationFrame(raf); raf = null;
+    levelEl.style.width = "0";
+    if (audioCtx) { try { audioCtx.close(); } catch (e) {} } audioCtx = null; analyser = null;
+  }
+  function releaseMic() {
+    if (stream) stream.getTracks().forEach(function (t) { t.stop(); });
+    stream = null;
+  }
+  async function start() {
+    if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia || !window.MediaRecorder) {
+      setStatus("This browser can't record audio. Try Chrome.", true); return;
+    }
+    try {
+      stream = await navigator.mediaDevices.getUserMedia({ audio: { echoCancellation: true, noiseSuppression: true } });
+    } catch (e) {
+      var denied = e && (e.name === "NotAllowedError" || e.name === "SecurityError");
+      setStatus(denied ? "The microphone is blocked. Click the camera/mic icon in the address bar, choose Allow, then press Record again." : "No microphone was found. Check that one is plugged in, then try again.", true);
+      return;
+    }
+    var type = pickType();
+    chunks = [];
+    try { recorder = type ? new MediaRecorder(stream, { mimeType: type, audioBitsPerSecond: 48000 }) : new MediaRecorder(stream); }
+    catch (e) { recorder = new MediaRecorder(stream); }
+    recorder.ondataavailable = function (ev) { if (ev.data && ev.data.size) chunks.push(ev.data); };
+    recorder.onstop = finish;
+    recorder.start(1000);
+    started = Date.now();
+    tick = setInterval(function () { timerEl.textContent = fmt(Date.now() - started); }, 250);
+    try {
+      audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+      analyser = audioCtx.createAnalyser(); analyser.fftSize = 1024;
+      audioCtx.createMediaStreamSource(stream).connect(analyser);
+      meter();
+    } catch (e) {}
+    recBtn.textContent = "■ Stop";
+    recBtn.classList.add("is-recording");
+    recBtn.setAttribute("aria-pressed", "true");
+    setStatus("");
+    statusEl.innerHTML = '<span class="dot" aria-hidden="true"></span>Recording… read your story out loud.';
+  }
+  function stop() {
+    if (recorder && recorder.state !== "inactive") recorder.stop();
+  }
+  function finish() {
+    clearInterval(tick); tick = null;
+    stopMeter();
+    var ms = Date.now() - started;
+    releaseMic();
+    recBtn.textContent = "● Record";
+    recBtn.classList.remove("is-recording");
+    recBtn.setAttribute("aria-pressed", "false");
+    var blob = new Blob(chunks, { type: (recorder && recorder.mimeType) || "audio/webm" });
+    recorder = null; chunks = [];
+    if (!blob.size || ms < 500) { setStatus("That recording was empty. Press Record and try again.", true); timerEl.textContent = "0:00"; return; }
+    addTake(blob, ms);
+    setStatus("Saved as Take " + takeNo + " in this window. Press ▶ to listen.");
+  }
+  function addTake(blob, ms) {
+    takeNo++;
+    takes.unshift({ n: takeNo, url: URL.createObjectURL(blob), ms: ms });
+    while (takes.length > MAX_TAKES) { var old = takes.pop(); URL.revokeObjectURL(old.url); }
+    drawTakes();
+  }
+  function drawTakes() {
+    takesEl.innerHTML = "";
+    noTakes.hidden = takes.length > 0;
+    takes.forEach(function (t) {
+      var li = document.createElement("li");
+      var head = document.createElement("div"); head.className = "head";
+      var label = document.createElement("span"); label.textContent = "Take " + t.n + " · " + fmt(t.ms);
+      var del = document.createElement("button"); del.type = "button"; del.textContent = "Delete";
+      del.setAttribute("aria-label", "Delete take " + t.n);
+      del.onclick = function () { URL.revokeObjectURL(t.url); takes = takes.filter(function (x) { return x !== t; }); drawTakes(); };
+      head.appendChild(label); head.appendChild(del);
+      var audio = document.createElement("audio"); audio.controls = true; audio.preload = "metadata"; audio.src = t.url;
+      li.appendChild(head); li.appendChild(audio);
+      takesEl.appendChild(li);
+    });
+  }
+  recBtn.addEventListener("click", function () { if (recorder && recorder.state === "recording") stop(); else start(); });
+  recBtn.setAttribute("aria-pressed", "false");
+  window.addEventListener("pagehide", function () { stop(); releaseMic(); });
+  window.__recorderTest = { takes: function () { return takes.slice(); }, showStory: showStory };
+})();
+</script>
+</body>
+</html>
